@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+
+import vGET_chord_positions_, vGenImgMatrix_, vModeProgCalculator_; 
+import os, re, shutil, sys;
+
+argv = "";
+for token in sys.argv[1:]:
+	argv += " "+token;
+
+key_mode = "";
+if len(argv) == 0:
+	while 1:
+		key_mode = input(" Key & mode >> ").strip().lower();
+		if key_mode == "x":
+			break;
+		[key, mode] = vModeProgCalculator_.extract_keyNmode( key_mode );
+		if key != "" and mode != "":
+			break;
+else:
+	key_mode = argv.strip().lower();
+	
+	if key_mode == ".k.all.m.":
+		conf = input(" You shure ?").strip();
+		if len(conf) > 0:
+			key_mode = "x";
+			exit(0);
+		else:
+			[key, mode] = ["ALL","ALL"];
+	else:
+		[key, mode] = vModeProgCalculator_.extract_keyNmode( key_mode );
+		if key == "" or mode == "":
+			print(" Invalid key or mode. ");
+			key_mode = "x";
+			exit(0);
+	
+#~ -------------------------------------------------------------
+
+if key_mode != "x":
+	key_mode_arr = [];
+	if key == "ALL" and mode == "ALL":
+		c_scale = vModeProgCalculator_.chromatic_scale;
+		modes = vModeProgCalculator_.modes;
+		for key_it in c_scale:
+			for mode_it in modes:
+				key_mode_arr .append([ key_it, mode_it ]);
+		print("\n === DOWNLOADING ALL KEYS, MODES === \n");
+	else:
+		key_mode_arr = [[key, mode]];
+	
+	for [key,mode] in key_mode_arr:
+		print("\n === DOWNLOADING {} {} === \n".format(key,mode));
+		
+		prog = vModeProgCalculator_.get_mode_prog( key, mode );
+		
+		print(" Chords: ",end="");
+		for chord in prog:
+			print(" {}".format(chord),end="");
+		print("\n--------------------------------------------------");
+		
+		mode_chords_folder = key+"_"+mode; 
+		if os.path.exists( mode_chords_folder):
+			shutil.rmtree( mode_chords_folder);
+		os.mkdir( mode_chords_folder);
+		
+		for i in range(0,len(prog)):
+			chord = prog[i];
+			chord_name = "chord-"+str(i+1)+"_"+chord.replace("/","-");
+			print("\n --- chord-{} {} ---".format(i+1,chord));
+			
+			img_tmp_folder = chord_name+"_tmp";
+			if os.path.exists(img_tmp_folder):
+				shutil.rmtree(img_tmp_folder);
+			os.mkdir(img_tmp_folder);
+
+			vGET_chord_positions_.download_chord_positions( chord, img_tmp_folder );
+			
+			matrix_img_path = mode_chords_folder+"/"+chord_name+".png";
+			vGenImgMatrix_.create_img_matrix( img_tmp_folder, matrix_img_path );
+
+			if os.path.exists(img_tmp_folder):
+				shutil.rmtree(img_tmp_folder);
+		print("");
